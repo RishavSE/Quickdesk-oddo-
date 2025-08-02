@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import axios from 'axios'; // ✅ import Axios
 import '../pages/auth.css';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Register = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -14,9 +16,17 @@ const Register = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(formData); // Replace with actual API call
+
+    try {
+      const res = await axios.post('http://localhost:5000/api/register', formData);
+      alert("registered sucessfully "); // Or show using toast
+      navigate('/login'); // Redirect to login
+    } catch (err) {
+      alert(err.response?.data?.message || 'Registration failed');
+      console.error(err);
+    }
   };
 
   return (
@@ -65,6 +75,7 @@ const Register = () => {
           <select name="role" value={formData.role} onChange={handleChange}>
             <option value="user">User</option>
             <option value="agent">Support Agent</option>
+            <option value="admin">Admin</option>
           </select>
         </div>
 
