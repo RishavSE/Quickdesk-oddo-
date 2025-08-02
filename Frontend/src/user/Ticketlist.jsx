@@ -9,16 +9,24 @@ const TicketList = () => {
 
   useEffect(() => {
     const fetchTickets = async () => {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        console.error('No token found, redirect to login.');
+        setLoading(false);
+        return;
+      }
+
       try {
-        const token = localStorage.getItem('token');
         const response = await axios.get('http://localhost:5000/api/tickets', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
+
         setTickets(response.data);
       } catch (error) {
-        console.error('Failed to fetch tickets:', error);
+        console.error('Failed to fetch tickets:', error.response?.data || error.message);
       } finally {
         setLoading(false);
       }
@@ -78,8 +86,7 @@ const TicketList = () => {
             className="modal-content"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3>{selectedTicket.subject}</h3>
-            <p><strong>Title:</strong> {selectedTicket.title}</p>
+            <h3>{selectedTicket.title}</h3>
             <p><strong>Description:</strong> {selectedTicket.description}</p>
             <p><strong>Status:</strong> <span className={getStatusClass(selectedTicket.status)}>{selectedTicket.status}</span></p>
             <p><strong>Created:</strong> {new Date(selectedTicket.createdAt).toLocaleString()}</p>

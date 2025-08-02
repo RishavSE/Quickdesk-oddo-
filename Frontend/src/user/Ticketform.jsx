@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const TicketForm = ({ onTicketCreated }) => {
@@ -6,7 +6,15 @@ const TicketForm = ({ onTicketCreated }) => {
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [email, setEmail] = useState('');
+
   const token = localStorage.getItem('token');
+
+  useEffect(() => {
+    // Decode token if you stored email in localStorage
+    const storedEmail = localStorage.getItem('email');
+    if (storedEmail) setEmail(storedEmail);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,11 +29,14 @@ const TicketForm = ({ onTicketCreated }) => {
     try {
       const res = await axios.post(
         'http://localhost:5000/api/tickets',
-        { title, description },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { title, description, email }, // ✅ include email now
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
       );
-
-      console.log('Ticket created:', res.data);
 
       if (!res.data || typeof res.data !== 'object') {
         setError('Unexpected response from server.');
@@ -35,8 +46,6 @@ const TicketForm = ({ onTicketCreated }) => {
       setTitle('');
       setDescription('');
       setSuccessMsg('Ticket created successfully!');
-
-      // Fetch updated ticket list if callback provided
       if (onTicketCreated) onTicketCreated();
 
     } catch (err) {

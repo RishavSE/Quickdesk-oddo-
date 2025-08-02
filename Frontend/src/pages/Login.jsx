@@ -12,6 +12,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('🔐 Logging in with:', { email, password, role });
 
     try {
       const res = await axios.post('http://localhost:5000/api/login', {
@@ -20,20 +21,34 @@ const Login = () => {
         role,
       });
 
+      console.log('✅ Login response:', res.data);
+
       if (res.data.token) {
-           localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data.user || { email, role }));
-        if (role === 'admin') {
+        const { token, role: returnedRole, email: returnedEmail, name } = res.data;
+
+        // Save to localStorage
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify({ email: returnedEmail, role: returnedRole, name }));
+
+        console.log('📦 Saved in localStorage:', {
+          token: localStorage.getItem('token'),
+          user: localStorage.getItem('user'),
+        });
+
+        // Redirect based on role
+        if (returnedRole === 'admin') {
           navigate('/adminpannel1');
-        } else if (role === 'agent') {
-          navigate('/agent-dashboard');
+        } else if (returnedRole === 'agent') {
+          navigate('/support-dashboard');
         } else {
           navigate('/user-dashboard');
         }
+
       } else {
         alert(res.data.message || 'Invalid credentials');
       }
     } catch (error) {
+      console.error('❌ Login error:', error.response?.data || error.message);
       alert(error.response?.data?.message || 'Login failed, please try again.');
     }
   };
