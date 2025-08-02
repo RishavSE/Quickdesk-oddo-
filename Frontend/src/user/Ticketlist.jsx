@@ -1,102 +1,93 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import './ticketList.css';
 
 const TicketList = () => {
-  const [tickets, setTickets] = useState([]); // Always start with array
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const token = localStorage.getItem('token');
-
-  const fetchTickets = async () => {
-  setLoading(true);
-  setError('');
-
-  try {
-    const res = await axios.get('http://localhost:5000/api/tickets', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    console.log('Raw API response:', res.data); // 👈 Log here
-
-    // Defensive check
-    if (Array.isArray(res.data)) {
-      setTickets(res.data);
-    } else if (res.data && Array.isArray(res.data.tickets)) {
-      setTickets(res.data.tickets);
-    } else {
-      console.error('Unexpected data format:', res.data); // 👈 Debug line
-      setTickets([]);
-      setError('Unexpected data format from server.');
-    }
-  } catch (err) {
-    console.error('Error fetching tickets:', err);
-    setError('Failed to load tickets.');
-    setTickets([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  const [tickets, setTickets] = useState([]);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:5000/api/tickets', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setTickets(response.data);
+      } catch (error) {
+        console.error('Failed to fetch tickets:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchTickets();
   }, []);
 
-  if (loading) return <p>Loading tickets...</p>;
-  if (error) return <p style={{ color: 'red' }}>{error}</p>;
-  if (!tickets.length) return <p>No tickets found.</p>;
+  const getStatusClass = (status) => {
+    if (status === 'pending') return 'status pending';
+    if (status === 'in progress') return 'status in-progress';
+    if (status === 'resolved') return 'status resolved';
+    return 'status';
+  };
 
   return (
-    <section>
-      <h2>Your Tickets</h2>
-      <table
-        style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          marginTop: 10,
-        }}
-      >
-        <thead>
-          <tr style={{ backgroundColor: '#004aad', color: 'white' }}>
-            <th style={{ padding: '8px', border: '1px solid #ddd' }}>Title</th>
-            <th style={{ padding: '8px', border: '1px solid #ddd' }}>Status</th>
-            <th style={{ padding: '8px', border: '1px solid #ddd' }}>Created At</th>
-            <th style={{ padding: '8px', border: '1px solid #ddd' }}>Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tickets.map((ticket) => (
-            <tr key={ticket._id}>
-              <td style={{ padding: '8px', border: '1px solid #ddd' }}>{ticket.title}</td>
-              <td
-                style={{
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  textTransform: 'capitalize',
-                  color:
-                    ticket.status === 'resolved'
-                      ? 'green'
-                      : ticket.status === 'pending'
-                      ? 'orange'
-                      : 'black',
-                  fontWeight: 'bold',
-                }}
-              >
-                {ticket.status}
-              </td>
-              <td style={{ padding: '8px', border: '1px solid #ddd' }}>
-                {new Date(ticket.createdAt).toLocaleString()}
-              </td>
-              <td style={{ padding: '8px', border: '1px solid #ddd' }}>
-                {ticket.description}
-              </td>
+    <div className="ticket-section">
+      <h2>My Tickets</h2>
+      {loading ? (
+        <p>Loading...</p>
+      ) : tickets.length === 0 ? (
+        <p>No tickets found.</p>
+      ) : (
+        <table className="ticket-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Created At</th>
+              <th>View</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
+          </thead>
+          <tbody>
+            {tickets.map((ticket) => (
+              <tr key={ticket._id}>
+                <td>{ticket.title}</td>
+                <td className={getStatusClass(ticket.status)}>{ticket.status}</td>
+                <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
+                <td>
+                  <button
+                    className="view-btn"
+                    onClick={() => setSelectedTicket(ticket)}
+                  >
+                    View
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* Modal */}
+      {selectedTicket && (
+        <div className="modal-overlay" onClick={() => setSelectedTicket(null)}>
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>{selectedTicket.subject}</h3>
+            <p><strong>Title:</strong> {selectedTicket.title}</p>
+            <p><strong>Description:</strong> {selectedTicket.description}</p>
+            <p><strong>Status:</strong> <span className={getStatusClass(selectedTicket.status)}>{selectedTicket.status}</span></p>
+            <p><strong>Created:</strong> {new Date(selectedTicket.createdAt).toLocaleString()}</p>
+            <button className="close-btn" onClick={() => setSelectedTicket(null)}>Close</button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
