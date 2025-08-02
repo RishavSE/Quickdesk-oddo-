@@ -75,34 +75,23 @@ export const getAllTickets = async (req, res) => {
 
 
 
+
+
 export const updateTicketStatusOrComment = async (req, res) => {
+  const { id } = req.params;
   const { status, comment } = req.body;
-  const ticketId = req.params.id;
 
   try {
-    const ticket = await Ticket.findById(ticketId);
+    const ticket = await Ticket.findById(id);
     if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
 
-    // Only support can update
-    if (req.user.role !== 'support') {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-
     if (status) ticket.status = status;
-
-    if (comment) {
-      ticket.comments.push({
-        text: comment,
-        commentedBy: req.user.id,
-      });
-    }
+    if (comment !== undefined) ticket.comment = comment;
 
     await ticket.save();
-
     res.status(200).json({ message: 'Ticket updated successfully', ticket });
   } catch (error) {
-    console.error('Update ticket error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error updating ticket:', error);
+    res.status(500).json({ message: 'Server error', error });
   }
 };
-

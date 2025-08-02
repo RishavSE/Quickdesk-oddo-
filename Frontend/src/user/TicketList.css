@@ -117,3 +117,47 @@
   margin-top: 10px;
 }
 
+.comment-section {
+  margin-top: 20px;
+}
+
+.comment-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.comment-item {
+  margin-bottom: 10px;
+  background: #f0f0f0;
+  padding: 8px;
+  border-radius: 5px;
+}
+
+.comment-form {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.comment-form textarea {
+  padding: 8px;
+  resize: none;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+.comment-form .submit-btn {
+  align-self: flex-end;
+  padding: 6px 12px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.comment-form .submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

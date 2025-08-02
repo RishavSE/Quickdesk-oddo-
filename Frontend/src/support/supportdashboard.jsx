@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import './SupportDashboard.css'; // your external CSS
+import './SupportDashboard.css';
 
 const SupportDashboard = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [commentMap, setCommentMap] = useState({});
 
-  // Fetch tickets from backend
   const fetchTickets = async () => {
     try {
       setLoading(true);
@@ -28,7 +27,6 @@ const SupportDashboard = () => {
         },
       });
 
-      console.log('Tickets fetched:', response.data);
       setTickets(response.data);
     } catch (error) {
       console.error('Error fetching tickets:', error.message);
@@ -38,60 +36,70 @@ const SupportDashboard = () => {
     }
   };
 
-  // Update ticket status
   const handleStatusChange = async (ticketId, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No auth token found.');
-        return;
-      }
-
       await axios.put(
         `http://localhost:5000/api/tickets/update/${ticketId}`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      fetchTickets();
+      // Optional: update only the changed ticket locally
+      setTickets((prev) =>
+        prev.map((ticket) =>
+          ticket._id === ticketId ? { ...ticket, status: newStatus } : ticket
+        )
+      );
     } catch (error) {
       console.error('Error updating status:', error.response?.data || error.message);
     }
   };
 
-  // Submit comment for a ticket
   const handleCommentSubmit = async (ticketId) => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No auth token found.');
-        return;
-      }
+      const user = JSON.parse(localStorage.getItem('user'));
+      const commentText = commentMap[ticketId];
 
-      const comment = commentMap[ticketId];
-      if (!comment) return;
+      if (!token || !commentText) return;
+
+      const newComment = {
+        text: commentText,
+        commentedBy: user?.email || 'Unknown',
+      };
 
       await axios.put(
         `http://localhost:5000/api/tickets/update/${ticketId}`,
-        { comment },
+        { comment: newComment },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      fetchTickets();
+      // Update local state to show the new comment immediately
+      setTickets((prev) =>
+        prev.map((ticket) =>
+          ticket._id === ticketId
+            ? {
+                ...ticket,
+                comments: [...(ticket.comments || []), newComment],
+              }
+            : ticket
+        )
+      );
+
+      // Clear textarea
       setCommentMap((prev) => ({ ...prev, [ticketId]: '' }));
     } catch (error) {
       console.error('Error submitting comment:', error.response?.data || error.message);
     }
   };
 
-  // Logout user
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/login';
   };
 
-  // Fetch tickets on component mount
   useEffect(() => {
     fetchTickets();
   }, []);
@@ -118,12 +126,13 @@ const SupportDashboard = () => {
             {tickets.map((ticket) => (
               <div className="ticket-card" key={ticket._id}>
                 <h3>{ticket.subject || 'No Subject'}</h3>
-                <p><strong>Email:</strong> {ticket.email || 'N/A'}</p>
-                <p><strong>Message:</strong> {ticket.description || ticket.title || 'No message'}</p>
-                <p><strong>Status:</strong> {ticket.status || 'Unknown'}</p>
+                <p><strong>Email:</strong> {ticket.email}</p>
+                <p><strong>Message:</strong> {ticket.description || ticket.title}</p>
+                <p><strong>Status:</strong> {ticket.status}</p>
 
                 <div className="status-actions">
                   <button onClick={() => handleStatusChange(ticket._id, 'pending')}>Mark Pending</button>
+                  <button onClick={() => handleStatusChange(ticket._id, 'in-progress')}>Mark In Progress</button>
                   <button onClick={() => handleStatusChange(ticket._id, 'resolved')}>Mark Resolved</button>
                 </div>
 
@@ -136,12 +145,17 @@ const SupportDashboard = () => {
                     placeholder="Add a comment..."
                     rows={3}
                   />
-                  <button onClick={() => handleCommentSubmit(ticket._id)}>Submit Comment</button>
+                  <button
+                    disabled={!commentMap[ticket._id]?.trim()}
+                    onClick={() => handleCommentSubmit(ticket._id)}
+                  >
+                    Submit Comment
+                  </button>
                 </div>
 
                 {ticket.comments?.length > 0 && (
                   <div className="comments-history">
-                    <h4>Previous Comments</h4>
+                    <h4>Comments</h4>
                     <ul>
                       {ticket.comments.map((c, index) => (
                         <li key={index}>
