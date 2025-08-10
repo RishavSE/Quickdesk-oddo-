@@ -36,7 +36,9 @@ QuickDesk is a simple, easy-to-use help desk ticketing system built with the MER
 ---
 🧑‍💻 Author
 Rishav Kumar Singh
+
 GitHub: @rishavSE
+
 Gmail: rishavse06@gmail.com
 
 📄 License
